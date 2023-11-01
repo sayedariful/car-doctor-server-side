@@ -10,7 +10,11 @@ const port = process.env.PORT || 5000;
 // middle ware
 app.use(
   cors({
-    origin: ["http://localhost:5173"],
+    origin: [
+      // "http://localhost:5173"
+      'https://car-doctor-client-side-6affa.web.app',
+      'https://car-doctor-client-side-6affa.firebaseapp.com'
+    ],
     credentials: true,
   })
 );
@@ -39,6 +43,7 @@ const logger = async (req, res, next) => {
 const verifyToken = async (req, res, next) => {
   const token = req.cookies?.token;
   console.log("verifying token"), token;
+  // no token available
   if (!token) {
     return res.status(401).send({ message: "not authorized" });
   }
@@ -68,15 +73,23 @@ async function run() {
       const user = req.body;
       console.log(user);
       const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
-        expiresIn: "10h",
+        expiresIn: "1h",
       });
       res
         .cookie("token", token, {
           httpOnly: true,
-          secure: false,
-          // sameSite: 'none',
+          secure: true,
+          sameSite: 'none',
         })
         .send({ success: true });
+    });
+
+    // logOut
+    app.post('/logout', async(req, res) => {
+      const user = req.body;
+      console.log('logged out', user);
+      res.clearCookie('token', {maxAge: 0})
+      .send({ success: true });
     });
 
     // services related api
@@ -113,10 +126,10 @@ async function run() {
       // console.log("token", req.cookies.token);
       console.log('user in the valid token', req.user);
       if(req.query.email !== req.user.email) {
-        return res.status(403).send({ message: 'forbiddedn access'})
+        return res.status(403).send({ message: 'forbidden access'})
       }
       let query = {};
-      if (req.query?.emails) {
+      if (req.query?.email) {
         query = { email: req.query.email };
       }
       const result = await bookingCollection.find(query).toArray();
