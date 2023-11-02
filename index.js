@@ -11,9 +11,13 @@ const port = process.env.PORT || 5000;
 app.use(
   cors({
     origin: [
-      // "http://localhost:5173"
+      // "http://localhost:5173",
+      // "http://localhost:5174",
       'https://car-doctor-client-side-6affa.web.app',
       'https://car-doctor-client-side-6affa.firebaseapp.com'
+
+      // 'https://car-doctor-client-side-6affa.web.app',
+      // 'https://car-doctor-client-side-6affa.firebaseapp.com'
     ],
     credentials: true,
   })
@@ -40,9 +44,9 @@ const logger = async (req, res, next) => {
   next();
 };
 
-const verifyToken = async (req, res, next) => {
+const verifyToken = (req, res, next) => {
   const token = req.cookies?.token;
-  console.log("verifying token"), token;
+  console.log("verifying token ###########", token) ;
   // no token available
   if (!token) {
     return res.status(401).send({ message: "not authorized" });
@@ -56,6 +60,7 @@ const verifyToken = async (req, res, next) => {
     // if token is valid it world be decoded
     console.log("value in the token", decoded);
     req.user = decoded;
+    // console.log("value in the token @@@@@@@@@", decoded.email)
     next();
   });
 };
@@ -69,6 +74,7 @@ async function run() {
     const bookingCollection = client.db("carDoctor").collection("bookings");
 
     // auth related api
+    //----------------check
     app.post("/jwt", logger, async (req, res) => {
       const user = req.body;
       console.log(user);
@@ -79,17 +85,17 @@ async function run() {
         .cookie("token", token, {
           httpOnly: true,
           secure: true,
-          sameSite: 'none',
+          sameSite: "none", //check
         })
         .send({ success: true });
     });
 
     // logOut
-    app.post('/logout', async(req, res) => {
+    app.post("/logout", async (req, res) => {
       const user = req.body;
-      console.log('logged out', user);
-      res.clearCookie('token', {maxAge: 0})
-      .send({ success: true });
+      console.log("logged out", user);
+
+      res.clearCookie("token", { maxAge: 0 }).send({ success: 'true' });//check usr logOut
     });
 
     // services related api
@@ -123,11 +129,15 @@ async function run() {
     // Bookings
     app.get("/bookings", logger, verifyToken, async (req, res) => {
       console.log(req.query.email);
-      // console.log("token", req.cookies.token);
-      console.log('user in the valid token', req.user);
-      if(req.query.email !== req.user.email) {
-        return res.status(403).send({ message: 'forbidden access'})
+      // console.log("token ###########", req.cookies.token);
+      console.log("token ###########", req.user.email);
+      console.log("user in the valid token 128", req.user);
+      if (req.user.email !== req.query.email) {
+        return res.status(403).send({ message: "forbidden access" });
       }
+
+      // ইফ এর মধ্য সে দুটি ইমেইল আছে , সেই দুটি ইমেইল কনসোল করা লাগবে 
+
       let query = {};
       if (req.query?.email) {
         query = { email: req.query.email };
@@ -180,6 +190,6 @@ app.get("/", (req, res) => {
   res.send("doctor is running");
 });
 
-app.listen(port, (req, res) => {
+app.listen(port, () => {
   console.log(`Car doctor server is running on port ${port}`);
 });
